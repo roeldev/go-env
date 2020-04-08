@@ -47,6 +47,74 @@ func TestMap_Merge(t *testing.T) {
 	}
 }
 
+func TestLookupEnv(t *testing.T) {
+	map1 := Map{"foo": "bar", "qux": "xoo"}
+	map2 := Map{"bruce": "batman", "clark": "superman"}
+	se1, se2 := os.LookupEnv("GOROOT")
+
+	tests := map[string]struct {
+		maps []Map
+		key  string
+		want [2]interface{}
+	}{
+		"empty map": {
+			maps: []Map{{}},
+			key:  "foo",
+			want: [2]interface{}{"", false},
+		},
+		"one map": {
+			maps: []Map{map1},
+			key:  "foo",
+			want: [2]interface{}{"bar", true},
+		},
+		"one map, invalid key": {
+			maps: []Map{map1},
+			key:  "bar",
+			want: [2]interface{}{"", false},
+		},
+		"two maps": {
+			maps: []Map{map1, map2},
+			key:  "clark",
+			want: [2]interface{}{"superman", true},
+		},
+		"two maps, invalid key": {
+			maps: []Map{map1, map2},
+			key:  "peter",
+			want: [2]interface{}{"", false},
+		},
+		"system env": {
+			maps: []Map{map1, map2},
+			key:  "GOROOT",
+			want: [2]interface{}{se1, se2},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			haveVal, haveBool := LookupEnv(tc.key, tc.maps...)
+			wantVal, wantBool := tc.want[0], tc.want[1]
+
+			if haveVal != wantVal || haveBool != wantBool {
+				t.Error(fail.RetVal{
+					Func: "LookupEnv",
+					Msg:  "return values should match",
+					Have: []interface{}{haveVal, haveBool},
+					Want: tc.want[:],
+				})
+			}
+
+			haveVal = Getenv(tc.key, tc.maps...)
+			if haveVal != wantVal {
+				t.Error(fail.Diff{
+					Func: "Getenv",
+					Have: haveVal,
+					Want: wantVal,
+				})
+			}
+		})
+	}
+}
+
 func TestEnviron(t *testing.T) {
 	m, n := Environ()
 	want := os.Environ()

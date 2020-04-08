@@ -26,6 +26,34 @@ func (m Map) Merge(src map[string]string) {
 	}
 }
 
+// Getenv retrieves and returns the value of the environment variable named by
+// the key from any of the provided maps. As a last resort it tries to get the
+// value using `os.LookupEnv`. It returns an empty string if the variable is
+// nowhere present.
+// To distinguish between an empty value and an unset value, use `LookupEnv`.
+func Getenv(key string, maps ...Map) string {
+	if res, ok := LookupEnv(key, maps...); ok {
+		return res
+	}
+
+	return ""
+}
+
+// LookupEnv retrieves the value of the environment variable named by the key
+// from any of the provided maps. As a last resort it tries to get the value
+// using `os.LookupEnv`. If the variable is present the value (which may be
+// empty) is returned and the boolean is true.
+// Otherwise the returned value will be empty and the boolean will be false.
+func LookupEnv(key string, maps ...Map) (string, bool) {
+	for _, m := range maps {
+		if res, ok := m[key]; ok {
+			return res, true
+		}
+	}
+
+	return os.LookupEnv(key)
+}
+
 // Environ returns a `Map` with the parsed environment variables of `os.Environ()`.
 func Environ() (Map, int) {
 	s := os.Environ()
