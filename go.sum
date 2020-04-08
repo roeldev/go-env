@@ -1,8 +1,8 @@
 github.com/google/go-cmp v0.4.0 h1:xsAVV57WRhGj6kEIi8ReJzQlHHqcBYCElAvkovg3B/4=
 github.com/google/go-cmp v0.4.0/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
-github.com/roeldev/go-errs v0.1.0 h1:JhyWDg4e3exe9sUcvCnzizUJ2ChNy6MRCghSVqWKwJ8=
-github.com/roeldev/go-errs v0.1.0/go.mod h1:iKiaaGdbPmJ/EKXU/s5e/KV8PnatYK7bZVNBSBljoJI=
-github.com/roeldev/go-fail v0.1.1 h1:xf++uuLUPCKbN0PtQQM+OoogHw6FI0UvXWSFRZ9ErwI=
-github.com/roeldev/go-fail v0.1.1/go.mod h1:OaAGP5g0ekJ/BQsuVHplcujeHUkgqJ0pmxabFInZzvI=
+github.com/roeldev/go-errs v0.2.0 h1:MknQ7vz9l4RJk0R5Aizscn7cuVjKdV18xZKrScWoRkU=
+github.com/roeldev/go-errs v0.2.0/go.mod h1:WGUuEWZCYGtgR1ZU+FnltnZEE2InpnWDzmQl4cT7z/Y=
+github.com/roeldev/go-fail v0.2.0 h1:vohtJvHv6cx1vDd6458q7JYTiSW/GCvlE7Kn+GMDWlk=
+github.com/roeldev/go-fail v0.2.0/go.mod h1:OaAGP5g0ekJ/BQsuVHplcujeHUkgqJ0pmxabFInZzvI=
 golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543 h1:E7g+9GITq07hpfrRu66IVDexMakfv52eLZ2CXBWiKr4=
 golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=

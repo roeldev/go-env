@@ -39,13 +39,13 @@ func Environ() (Map, int) {
 func Open(path string, dest Map) (int, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return 0, errs.Wrap(err)
+		return 0, errs.Trace(err)
 	}
 
 	//noinspection GoUnhandledErrorResult
 	defer f.Close()
 	n, err := Read(f, dest)
-	return n, errs.Wrap(err)
+	return n, errs.Trace(err)
 }
 
 // Read from an `io.Reader`, parseAndAdd its results and add them to the provided Map. Each line is
@@ -65,7 +65,7 @@ func Read(r io.Reader, dest Map) (int, error) {
 		}
 	}
 
-	return n, errs.Wrap(scanner.Err())
+	return n, errs.Trace(scanner.Err())
 }
 
 // ParseSlice parses a slice of strings to the provided `Map`. The slice should be clean, entries
