@@ -94,25 +94,19 @@ func TestLookupEnv(t *testing.T) {
 }
 
 func TestEnviron(t *testing.T) {
-	m, n := Environ()
+	have, n := Environ()
 	want := os.Environ()
 
-	assert.Equal(t, len(want), len(m))
+	assert.Equal(t, len(want), n)
 
-	// loop trough the original environ list as this is in the
-	// "proper" order
-	have := make([]string, 0, n)
 	for _, w := range want {
-		k, _ := ParsePair(w)
-		v, ok := m[k]
-		if !ok {
-			v = "!!MISSING!!"
+		key, wantVal := ParsePair(w)
+		haveVal, _ := have[key]
+
+		if !assert.Equal(t, wantVal, haveVal) {
+			assert.Contains(t, wantVal, haveVal)
 		}
-
-		have = append(have, k+"="+v)
 	}
-
-	assert.Exactly(t, want, have)
 }
 
 func TestOpen_not_existing_file(t *testing.T) {
