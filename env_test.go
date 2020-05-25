@@ -1,13 +1,11 @@
 package env
 
 import (
-	"fmt"
 	"os"
 	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/roeldev/go-fail"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMap_Merge(t *testing.T) {
@@ -36,13 +34,7 @@ func TestMap_Merge(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			tc.env.Merge(tc.merge)
-			if !cmp.Equal(tc.env, tc.want) {
-				t.Error(fail.Diff{
-					Func: "Map.Merge",
-					Have: tc.env,
-					Want: tc.want,
-				})
-			}
+			assert.Exactly(t, tc.want, tc.env)
 		})
 	}
 }
@@ -91,26 +83,12 @@ func TestLookupEnv(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			haveVal, haveBool := LookupEnv(tc.key, tc.maps...)
-			wantVal, wantBool := tc.want[0], tc.want[1]
+			a, b := LookupEnv(tc.key, tc.maps...)
+			x, y := tc.want[0], tc.want[1]
 
-			if haveVal != wantVal || haveBool != wantBool {
-				t.Error(fail.RetVal{
-					Func: "LookupEnv",
-					Msg:  "return values should match",
-					Have: []interface{}{haveVal, haveBool},
-					Want: tc.want[:],
-				})
-			}
-
-			haveVal = Getenv(tc.key, tc.maps...)
-			if haveVal != wantVal {
-				t.Error(fail.Diff{
-					Func: "Getenv",
-					Have: haveVal,
-					Want: wantVal,
-				})
-			}
+			assert.Exactly(t, x, a)
+			assert.Exactly(t, y, b)
+			assert.Exactly(t, x, Getenv(tc.key, tc.maps...))
 		})
 	}
 }
@@ -119,59 +97,37 @@ func TestEnviron(t *testing.T) {
 	m, n := Environ()
 	want := os.Environ()
 
-	if n != len(want) || n != len(m) {
-		have := make([]string, 0, n)
+	assert.Equal(t, len(want), len(m))
 
-		// loop trough the original environ list as this is in the
-		// "proper" order
-		for _, w := range want {
-			k, _ := ParsePair(w)
-			v, ok := m[k]
-			if !ok {
-				v = "!!MISSING!!"
-			}
-
-			have = append(have, k+"="+v)
+	// loop trough the original environ list as this is in the
+	// "proper" order
+	have := make([]string, 0, n)
+	for _, w := range want {
+		k, _ := ParsePair(w)
+		v, ok := m[k]
+		if !ok {
+			v = "!!MISSING!!"
 		}
 
-		t.Error(fail.Diff{
-			Func: "Environ",
-			Msg:  fmt.Sprintf("all entries of `os.Environ()` should be present [%d/%d]", n, len(want)),
-			Have: have,
-			Want: want,
-		})
+		have = append(have, k+"="+v)
 	}
+
+	assert.Exactly(t, want, have)
 }
 
-func TestOpen_unexisting_file(t *testing.T) {
+func TestOpen_not_existing_file(t *testing.T) {
 	have := make(Map)
 	n, err := Open("doesnot.exist", have)
 
-	if err == nil {
-		t.Error(fail.Msg{
-			Func: "Open",
-			Msg:  "expecting an error when trying to open a file that does not exist",
-		})
-	}
-	if n != 0 {
-		t.Error(fail.Diff{
-			Func: "Open",
-			Msg:  "should return 0 parsed lines",
-			Have: n,
-			Want: 0,
-		})
-	}
+	assert.Equal(t, 0, n, "should return 0 parsed lines")
+	assert.Error(t, err, "expecting an error when trying to open a file that does not exist")
 }
 
 func TestOpen(t *testing.T) {
 	have := make(Map)
 	n, err := Open("test.env", have)
-	if err != nil {
-		t.Fatal(fail.Err{
-			Func: "Open",
-			Err:  err,
-		})
-	}
+
+	assert.NoError(t, err)
 
 	want := Map{
 		"FOO": "bar",
@@ -179,21 +135,8 @@ func TestOpen(t *testing.T) {
 		"qux": "#xoo",
 	}
 
-	if !cmp.Equal(have, want) {
-		t.Error(fail.Diff{
-			Func: "Open",
-			Have: have,
-			Want: want,
-		})
-	}
-	if len(want) != n {
-		t.Error(fail.Diff{
-			Func: "Open",
-			Msg:  "return value should be the number of parsed items",
-			Have: n,
-			Want: len(want),
-		})
-	}
+	assert.Equal(t, len(want), n, "return value should be the number of parsed items")
+	assert.Exactly(t, want, have)
 }
 
 func TestRead(t *testing.T) {
@@ -204,12 +147,8 @@ qux="#xoo"
 
 	have := make(Map)
 	n, err := Read(r, have)
-	if err != nil {
-		t.Fatal(fail.Err{
-			Func: "Read",
-			Err:  err,
-		})
-	}
+
+	assert.NoError(t, err)
 
 	want := Map{
 		"FOO": "bar",
@@ -217,21 +156,8 @@ qux="#xoo"
 		"qux": "#xoo",
 	}
 
-	if !cmp.Equal(have, want) {
-		t.Error(fail.Diff{
-			Func: "Read",
-			Have: have,
-			Want: want,
-		})
-	}
-	if len(want) != n {
-		t.Error(fail.Diff{
-			Func: "Read",
-			Msg:  "return value should be the number of parsed items",
-			Have: n,
-			Want: len(want),
-		})
-	}
+	assert.Equal(t, len(want), n, "return value should be the number of parsed items")
+	assert.Exactly(t, want, have)
 }
 
 func TestParseFlagArgs(t *testing.T) {
@@ -301,30 +227,10 @@ func TestParseFlagArgs(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			haveMap := make(Map)
 			haveRes, n := ParseFlagArgs(tc.flag, tc.input, haveMap)
-			if !cmp.Equal(haveMap, tc.wantMap) {
-				t.Error(fail.Diff{
-					Func: "ParseFlagArgs",
-					Msg:  "destination map should include all parsed env. vars",
-					Have: haveMap,
-					Want: tc.wantMap,
-				})
-			}
-			if !cmp.Equal(haveRes, tc.wantRes) {
-				t.Error(fail.Diff{
-					Func: "ParseFlagArgs",
-					Msg:  "return value should be without parsed env. vars",
-					Have: strings.Join(haveRes, " "),
-					Want: strings.Join(tc.wantRes, " "),
-				})
-			}
-			if n != len(tc.wantMap) {
-				t.Error(fail.Diff{
-					Func: "ParseFlagArgs",
-					Msg:  "second return value should be the number of parsed items",
-					Have: n,
-					Want: len(tc.wantMap),
-				})
-			}
+
+			assert.Exactly(t, tc.wantMap, haveMap, "destination map should include all parsed env. vars")
+			assert.Exactly(t, tc.wantRes, haveRes, "return value should be without parsed env. vars")
+			assert.Equal(t, len(tc.wantMap), n, "second return value should be the number of parsed items")
 		})
 	}
 }
@@ -343,13 +249,9 @@ func TestParsePair(t *testing.T) {
 	for input, want := range tests {
 		t.Run(input, func(t *testing.T) {
 			key, val := ParsePair(input)
-			if key != want[0] || val != want[1] {
-				t.Error(fail.Diff{
-					Func: "ParsePair",
-					Have: [2]string{key, val},
-					Want: want,
-				})
-			}
+
+			assert.Exactly(t, want[0], key)
+			assert.Exactly(t, want[1], val)
 		})
 	}
 }
