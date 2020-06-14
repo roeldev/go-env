@@ -14,6 +14,9 @@ const (
 	runeDblQuot = 34 // "
 	runeHash    = 35 // #
 	runeDash    = 45 // -
+
+	ShortFlag = "e"
+	LongFlag  = "env"
 )
 
 // Map represents a map of key value pairs.
