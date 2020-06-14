@@ -97,7 +97,7 @@ func TestEnviron(t *testing.T) {
 	have, n := Environ()
 	want := os.Environ()
 
-	assert.Equal(t, len(want), n)
+	assert.Len(t, want, n)
 
 	for _, w := range want {
 		key, wantVal := ParsePair(w)
@@ -109,28 +109,30 @@ func TestEnviron(t *testing.T) {
 	}
 }
 
-func TestOpen_not_existing_file(t *testing.T) {
-	have := make(Map)
-	n, err := Open("doesnot.exist", have)
-
-	assert.Equal(t, 0, n, "should return 0 parsed lines")
-	assert.Error(t, err, "expecting an error when trying to open a file that does not exist")
-}
-
 func TestOpen(t *testing.T) {
-	have := make(Map)
-	n, err := Open("test.env", have)
+	t.Run("with non-existing file", func(t *testing.T) {
+		have := make(Map)
+		n, err := Open("doesnot.exist", have)
 
-	assert.NoError(t, err)
+		assert.Equal(t, 0, n, "should return 0 parsed lines")
+		assert.Error(t, err, "expecting an error when trying to open a file that does not exist")
+	})
 
-	want := Map{
-		"FOO": "bar",
-		"bar": "baz",
-		"qux": "#xoo",
-	}
+	t.Run("with existing file", func(t *testing.T) {
+		have := make(Map)
+		n, err := Open("test.env", have)
 
-	assert.Equal(t, len(want), n, "return value should be the number of parsed items")
-	assert.Exactly(t, want, have)
+		assert.NoError(t, err)
+
+		want := Map{
+			"FOO": "bar",
+			"bar": "baz",
+			"qux": "#xoo",
+		}
+
+		assert.Len(t, want, n, "return value should be the number of parsed items")
+		assert.Exactly(t, want, have)
+	})
 }
 
 func TestRead(t *testing.T) {
@@ -139,7 +141,7 @@ bar='baz'
 qux="#xoo"
 `)
 
-	have := make(Map)
+	have := make(Map, 3)
 	n, err := Read(r, have)
 
 	assert.NoError(t, err)
@@ -150,7 +152,7 @@ qux="#xoo"
 		"qux": "#xoo",
 	}
 
-	assert.Equal(t, len(want), n, "return value should be the number of parsed items")
+	assert.Len(t, want, n, "return value should be the number of parsed items")
 	assert.Exactly(t, want, have)
 }
 
@@ -162,58 +164,64 @@ func TestParseFlagArgs(t *testing.T) {
 		wantMap Map
 	}{
 		"empty": {
-			flag:    "e",
+			flag:    ShortFlag,
 			input:   []string{},
 			wantRes: []string{},
 			wantMap: Map{},
 		},
 		"none": {
-			flag:    "e",
+			flag:    ShortFlag,
 			input:   []string{"-a", "-e", "-b=1", "-c", "2", "-e"},
 			wantRes: []string{"-a", "-b=1", "-c", "2"},
 			wantMap: Map{},
 		},
-		"single dash": {
-			flag:    "e",
+		"short flag": {
+			flag:    ShortFlag,
 			input:   []string{"-e=foo=bar"},
 			wantRes: []string{},
 			wantMap: Map{"foo": "bar"},
 		},
-		"single dash next arg": {
-			flag:    "env",
-			input:   []string{"-env", "foo=bar"},
-			wantRes: []string{},
-			wantMap: Map{"foo": "bar"},
-		},
-		"single double dash": {
-			flag:    "env",
+		"long flag": {
+			flag:    LongFlag,
 			input:   []string{"--env=qux=xoo"},
 			wantRes: []string{},
 			wantMap: Map{"qux": "xoo"},
 		},
-		"single double dash next arg": {
-			flag:    "e",
+		"dd short flag next arg": {
+			flag:    ShortFlag,
 			input:   []string{"--e", "qux=xoo"},
 			wantRes: []string{},
 			wantMap: Map{"qux": "xoo"},
 		},
+		"long flag next arg": {
+			flag:    LongFlag,
+			input:   []string{"-env", "foo=bar"},
+			wantRes: []string{},
+			wantMap: Map{"foo": "bar"},
+		},
+		"long flag multi args": {
+			flag:    LongFlag,
+			input:   []string{"-env", "foo=bar", "qux=xoo"},
+			wantRes: []string{},
+			wantMap: Map{"foo": "bar", "qux": "xoo"},
+		},
 		"mixed": {
-			flag:    "e",
+			flag:    ShortFlag,
 			input:   []string{"-e", "foo=bar", "-e=empty", "bar", "--e=qux=xoo", "-e", "bar=baz", "--skip", "-e"},
 			wantRes: []string{"-e=empty", "bar", "--skip"},
 			wantMap: Map{"foo": "bar", "qux": "xoo", "bar": "baz"},
 		},
 		"multi mixed": {
-			flag:    "e",
+			flag:    ShortFlag,
 			input:   []string{"-e", "foo=bar", "empty=", "bar", "--e=qux=xoo", "nop=nop", "-e", "bar=baz", "--skip", "-e"},
 			wantRes: []string{"bar", "nop=nop", "--skip"},
 			wantMap: Map{"foo": "bar", "empty": "", "qux": "xoo", "bar": "baz"},
 		},
 		"lookahead": {
-			flag:    "e",
-			input:   []string{"-e", "-t", "foo=bar", "-e", "qux=xoo", "empty=", "baz"},
-			wantRes: []string{"-t", "foo=bar", "baz"},
-			wantMap: Map{"qux": "xoo", "empty": ""},
+			flag:    ShortFlag,
+			input:   []string{"-e", "-t", "nop=nop", "-e", "foo=bar", "qux=xoo", "empty=", "baz"},
+			wantRes: []string{"-t", "nop=nop", "baz"},
+			wantMap: Map{"foo": "bar", "qux": "xoo", "empty": ""},
 		},
 	}
 
@@ -224,7 +232,7 @@ func TestParseFlagArgs(t *testing.T) {
 
 			assert.Exactly(t, tc.wantMap, haveMap, "destination map should include all parsed env. vars")
 			assert.Exactly(t, tc.wantRes, haveRes, "return value should be without parsed env. vars")
-			assert.Equal(t, len(tc.wantMap), n, "second return value should be the number of parsed items")
+			assert.Len(t, tc.wantMap, n, "second return value should be the number of parsed items")
 		})
 	}
 }
